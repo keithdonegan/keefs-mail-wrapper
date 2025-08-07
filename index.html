@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Keef's Mail</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f0f0f0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+      #sidebar {
+        width: 60px;
+        background: #eeeeee; /* Bright red for debugging - make it very visible! */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 10px;
+        flex-shrink: 0;
+        -webkit-app-region: drag;
+        z-index: 9999;
+        position: relative;
+      }
+      .btn {
+        width: 40px;
+        height: 40px;
+        margin: 10px 0;
+        border-radius: 50%;
+        background: #444;
+        cursor: pointer;
+        overflow: hidden;
+        -webkit-app-region: no-drag;
+        transition: background 0.2s;
+        position: relative;
+        z-index: 10000; /* Make sure buttons are above everything */
+        border: 2px solid #fff; /* Add white border to make buttons more visible */
+      }
+      .btn:hover {
+        background: #555;
+      }
+      .btn.active {
+        background: #0066cc;
+      }
+      .btn img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #content {
+        flex-grow: 1;
+        height: 100%;
+        background-color: #ddd; /* Temporary background to see the content area */
+        position: relative;
+      }
+      /* Add a debug panel */
+      #debug {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        z-index: 1000;
+        max-width: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="debug">
+      <div>Debug Info:</div>
+      <div id="debug-content">Loading...</div>
+    </div>
+
+    <div id="sidebar">
+      <div class="btn" id="btn-0" onclick="switchTo(0)">
+        <img src="assets/icons/gmail-personal.png" alt="Personal" onerror="this.style.display='none'"/>
+      </div>
+      <div class="btn" id="btn-1" onclick="switchTo(1)">
+        <img src="assets/icons/gmail-personal.png" alt="Work" onerror="this.style.display='none'"/>
+      </div>
+    </div>
+    <div id="content"></div>
+
+    <script>
+      let currentAccount = -1;
+      
+      function updateDebug(message) {
+        const debugContent = document.getElementById('debug-content');
+        const now = new Date().toLocaleTimeString();
+        debugContent.innerHTML += `<br>${now}: ${message}`;
+      }
+
+      function switchTo(index) {
+        updateDebug(`switchTo(${index}) called`);
+        
+        // Check if electronAPI exists
+        if (typeof window.electronAPI === 'undefined') {
+          updateDebug('ERROR: electronAPI is undefined!');
+          return;
+        }
+        
+        if (typeof window.electronAPI.switchAccount !== 'function') {
+          updateDebug('ERROR: switchAccount function not found!');
+          return;
+        }
+        
+        try {
+          // Update UI to show active button
+          document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+          document.getElementById(`btn-${index}`).classList.add('active');
+          
+          // Call the electron function
+          window.electronAPI.switchAccount(index);
+          currentAccount = index;
+          updateDebug(`Called electronAPI.switchAccount(${index})`);
+        } catch (error) {
+          updateDebug(`ERROR: ${error.message}`);
+        }
+      }
+
+      // Check if API is available when page loads
+      window.addEventListener('DOMContentLoaded', () => {
+        updateDebug('DOM loaded');
+        
+        if (window.electronAPI) {
+          updateDebug('electronAPI is available');
+          if (window.electronAPI.switchAccount) {
+            updateDebug('switchAccount function is available');
+          } else {
+            updateDebug('switchAccount function is missing');
+          }
+        } else {
+          updateDebug('electronAPI is not available');
+        }
+      });
+    </script>
+  </body>
+</html>
