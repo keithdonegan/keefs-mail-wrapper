@@ -1,2 +1,7 @@
 node_modules
 out/
+.DS_Store
+assets/icons/2-app.icns
+.gitignore
+assets/icons/old-app.icns
+.DS_Store

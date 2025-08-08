@@ -24,6 +24,7 @@ function createWindow() {
     width: 1200,
     height: 800,
     show: false,
+    backgroundColor: '#1f1f1f', // Dark background to minimize white flash
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -79,8 +80,10 @@ function createBrowserView(account, index) {
       partition: `persist:${account.sessionKey}`,
       contextIsolation: true,
       nodeIntegration: false,
-      backgroundThrottling: false // Prevent background tab throttling
-    }
+      backgroundThrottling: false, // Prevent background tab throttling
+      paintWhenInitiallyHidden: false // Reduce white flash
+    },
+    show: false // Don't show until ready
   });
 
   // Store account info on the view for reference
@@ -205,15 +208,22 @@ function performViewSwitch(index) {
     return;
   }
 
-  // Remove current view
-  const currentView = mainWindow.getBrowserView();
-  if (currentView) {
-    mainWindow.removeBrowserView(currentView);
-  }
-
-  // Set the new view
-  mainWindow.setBrowserView(view);
+  // Pre-configure the view bounds before showing it
   updateViewBounds(view);
+
+  // Get current view for smooth transition
+  const currentView = mainWindow.getBrowserView();
+  
+  // Set the new view BEFORE removing the old one to reduce flash
+  mainWindow.setBrowserView(view);
+  
+  // Now remove the old view if it exists and is different
+  if (currentView && currentView !== view) {
+    // Small delay to ensure new view is rendering
+    setTimeout(() => {
+      mainWindow.removeBrowserView(currentView);
+    }, 50);
+  }
 
   // Check if the view needs refreshing
   const currentURL = view.webContents.getURL();
@@ -227,9 +237,11 @@ function performViewSwitch(index) {
     console.log(`View ${index} needs refresh (URL: ${currentURL}, last load: ${timeSinceLastLoad}ms ago)`);
     view.webContents.loadURL(accounts[index].url);
   } else {
-    // Just reload to ensure fresh content
-    console.log('Reloading view to ensure fresh content...');
-    view.webContents.reload();
+    // Just reload to ensure fresh content, but only if it's been a while
+    if (timeSinceLastLoad > 10 * 60 * 1000) { // 10 minutes
+      console.log('Reloading view to ensure fresh content...');
+      view.webContents.reload();
+    }
   }
 
   // Focus the view
