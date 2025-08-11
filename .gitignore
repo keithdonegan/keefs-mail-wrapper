@@ -5,3 +5,5 @@ assets/icons/2-app.icns
 .gitignore
 assets/icons/old-app.icns
 .DS_Store
+.DS_Store
+assets/.DS_Store
